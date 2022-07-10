@@ -1,27 +1,25 @@
 var amqp = require("amqplib");
 
+var QUEUE_NAME = "TEST_QUEUE";
+
 amqp
-  .connect("amqp://localhost")
-  .then(function (conn) {
+  .connect("amqp://admin:admin@localhost/test")
+  .then(async function (conn) {
     process.once("SIGINT", function () {
       conn.close();
     });
-    return conn.createChannel().then(function (ch) {
-      var ok = ch.assertQueue("hello", { durable: false });
-
-      ok = ok.then(function (_qok) {
-        return ch.consume(
-          "hello",
-          function (msg) {
-            console.log(" [x] Received '%s'", msg.content.toString());
-          },
-          { noAck: true }
-        );
-      });
-
-      return ok.then(function (_consumeOk) {
-        console.log(" [*] Waiting for messages. To exit press CTRL+C");
-      });
+    const ch = await conn.createChannel();
+    var ok = ch.assertQueue(QUEUE_NAME, { durable: false });
+    ok = ok.then(function (_qok) {
+      return ch.consume(
+        QUEUE_NAME,
+        function (msg) {
+          console.log(" [x] Received '%s'", msg.content.toString());
+        },
+        { noAck: true }
+      );
     });
+    const _consumeOk = await ok;
+    console.log(" [*] Waiting for messages. To exit press CTRL+C");
   })
   .catch(console.warn);
